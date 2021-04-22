@@ -4,7 +4,7 @@ This plugin enable your Cordova and PhoneGap mobile applications to use the Wear
 
 Platforms:
 
-*Android 9
+ * Android 9
 
 Available functionality:
 
