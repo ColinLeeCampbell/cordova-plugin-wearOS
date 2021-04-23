@@ -35,7 +35,7 @@ Use function `wearOS.subscribe` to subscribe to messages:
 
     wearOS.subscribe(success, error)
 
-Subscribe to receive JSONObject messages on a mobile phone from a wearOS connected wearable. This function adds a Wearable Listener to the Wearable Message Client and reports all messages and errors to the supplied callback functions. 
+Subscribe to receive JSONObject messages on a mobile phone from a wearOS connected wearable. This function adds a Wearable Listener to the Wearable Message Client and reports all recievedmessages and errors to the supplied callback functions. 
 
 Parameters:
 
@@ -65,14 +65,13 @@ Use function `wearOS.sendMessage` to subscribe to messages:
 
     wearOS.sendMessage(jsonObject, messagePath, success, error)
 
-Send JSONObject messages from a mobile phone to it's wearOS connected wearable.
+Send JSONObject messages from a mobile phone to it's wearOS connected wearable. This function reports all successes and errors to the supplied callback functions. 
 
 Parameters:
 
     @param {JSONObject} jsonObject - JSON Object message
     @param {String} messagePath - Path to wear the message will be stored by the wearable.
-    @param {successCallback} success - Success callback, called repeatedly
-    for each message recieved.
+    @param {successCallback} success - Success callback, called when a message is sent successfully.
     @param {failCallback} error - Error callback.
    
 
