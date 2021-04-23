@@ -24,7 +24,7 @@ Install using the Apache Cordova command line:
 ## Future Updates
 
 * Add the ability to have multiple listeners (data/message/channel).
-* Include googleFitApi.
+* Include Google Fit Api.
 * Include example wearable code.
 
 ## Quick Guide
