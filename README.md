@@ -23,8 +23,9 @@ Install using the Apache Cordova command line:
 
 ## Future Updates
 
-* Add the ability to have multiple listeners, one for each 
+* Add the ability to have multiple listeners (data/message/channel).
 * Include googleFitApi.
+* Include example wearable code.
 
 ## Quick Guide
 
@@ -34,19 +35,60 @@ Use function `wearOS.subscribe` to subscribe to messages:
 
     wearOS.subscribe(success, error)
 
-Adds a Wearable Listener to the Wearable Message Client. All messages and errors are reported to the supplied callback functions. 
+Subscribe to receive JSONObject messages on a mobile phone from a wearOS connected wearable. This function adds a Wearable Listener to the Wearable Message Client and reports all messages and errors to the supplied callback functions. 
 
 Parameters:
 
-    @param {scanCallback} onDeviceFound - Success callback, called repeatedly
+    @param {successCallback} success - Success callback, called repeatedly
     for each message recieved.
-    @param {failCallback} onScanError - Error callback.
+    @param {failCallback} error - Error callback.
    
 
 Examples:
 
-    // Scan for all services.
+    // Subscribe to  wearable messages
     wearOS.subscribe(
+        function(message)
+        {
+            console.log('message recieved from wearable: ' + message.message);
+        },
+        function(errorCode)
+        {
+            console.log('message recieve error: ' + errorCode);
+        }
+    );
+
+
+### Send Messages
+
+Use function `wearOS.sendMessage` to subscribe to messages:
+
+    wearOS.sendMessage(jsonObject, messagePath, success, error)
+
+Send JSONObject messages from a mobile phone to it's wearOS connected wearable.
+
+Parameters:
+
+    @param {JSONObject} jsonObject - JSON Object message
+    @param {String} messagePath - path to wear the message will be stored by the wearable.
+    @param {successCallback} success - Success callback, called repeatedly
+    for each message recieved.
+    @param {failCallback} error - Error callback.
+   
+
+Examples:
+    
+    var message = {
+                    "message" : "hello wearable!",
+                    "timestamp" : Date.now()
+                  };
+                  
+    var messagePath = "/messages";
+                  
+    // Send a message to the connected wearable
+    wearOS.sendMessage(
+        message,
+        messagePath,
         function(message)
         {
             console.log('message recieved from wearable: ' + message);
@@ -56,6 +98,4 @@ Examples:
             console.log('message recieve error: ' + errorCode);
         }
     );
-
-
 
