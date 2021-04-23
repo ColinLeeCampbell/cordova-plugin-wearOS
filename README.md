@@ -91,11 +91,11 @@ Examples:
         messagePath,
         function(message)
         {
-            console.log('message recieved from wearable: ' + message);
+            console.log('message sent to wearable: ' + message);
         },
         function(errorCode)
         {
-            console.log('message recieve error: ' + errorCode);
+            console.log('message sent error: ' + errorCode);
         }
     );
 
