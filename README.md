@@ -1,6 +1,6 @@
 # Cordova WearOS Plugin
 
-This plugin enable your Cordova and PhoneGap mobile applications to use the WearOS API.
+This plugin enables your Cordova and PhoneGap mobile applications to use the WearOS API.
 
 Platforms:
 
