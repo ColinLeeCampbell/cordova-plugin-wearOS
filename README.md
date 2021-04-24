@@ -70,7 +70,7 @@ Send JSONObject messages from a mobile phone to it's wearOS connected wearable. 
 Parameters:
 
     @param {JSONObject} jsonObject - JSON Object message
-    @param {String} messagePath - Path to wear the message will be stored by the wearable.
+    @param {String} messagePath - Path to wear the message will be delivered to on the wearble.
     @param {successCallback} success - Success callback, called when a message is sent successfully.
     @param {failCallback} error - Error callback.
    
