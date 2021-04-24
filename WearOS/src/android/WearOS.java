@@ -158,6 +158,7 @@ public class WearOS extends CordovaPlugin {
             e.printStackTrace();
         }
     }
+    
     /**
      * Class: WearableListener
      *
