@@ -1,56 +1,48 @@
-package com.wearOS;
+package com.WearOS;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
-import android.net.Uri;
 import androidx.annotation.NonNull;
 import android.util.Log;
-
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
-
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.android.gms.wearable.CapabilityClient;
 import com.google.android.gms.wearable.CapabilityInfo;
 import com.google.android.gms.wearable.DataClient;
-import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
-import com.google.android.gms.wearable.DataItem;
-import com.google.android.gms.wearable.DataMap;
-import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageClient;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.Wearable;
-import com.google.android.gms.wearable.WearableListenerService;
-
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-
+/**
+ * Cordova WearOS Plugin
+ *
+ * This plugin enables your Cordova and PhoneGap mobile applications to use the Google Play Services 17.0.0 Wearable API to
+ * send and receive messages to and from a WearOS connected wearable.
+ *
+ * @author Colin Campbell - Spring 2021
+ *
+ */
 public class WearOS extends CordovaPlugin {
 
-    Context context;
-    private Activity activity;
-    DataClient dataClient;
-    Wearable.WearableOptions options;
+    private Context context;
+    private Node wNode;
+
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         context = cordova.getContext();
-        activity = cordova.getActivity();
     }
 
     @Override
@@ -61,63 +53,53 @@ public class WearOS extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        
         if (action.equals("subscribe")) {
 
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                    String dataLayerPath = null, dataLayerType = null;
-                    try {
-                        dataLayerPath = args.getString(0);
-                        dataLayerType = args.getString(1);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-                    subscribe(dataLayerPath,dataLayerType,callbackContext);
+                    subscribe(callbackContext);
                 }});
             return true;
         }
-        else if (action.equals("sendMessage")){
+        else if (action.equals("sendMessage")) {
 
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                    JSONObject jsonObject = null;
-                    String messagePath = null;
                     try {
-                        jsonObject = args.getJSONObject(0);
-                        messagePath = args.getString(1);
+                        JSONObject jsonObject = args.getJSONObject(0);
+                        String messagePath = args.getString(1);
+                        sendMessage(jsonObject, messagePath, callbackContext);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-                    sendMessage(jsonObject,messagePath,callbackContext);
                 }});
             return true;
         }
         return false;
     }
 
-
-    private void subscribe(String dataLayerPath,String dataLayerType,CallbackContext callbackContext){
-
-        Wearable.getDataClient(context).addListener(new WearableListener(dataLayerPath,dataLayerType,callbackContext));
-    }
-
-
-
-    private void sendMessage(JSONObject jsonObject, String messagePath, CallbackContext callbackContext){
-
-        Task<List<Node>> nodeListTask =  Wearable.getNodeClient(context).getConnectedNodes();
+    /**
+     * Helper Function: determineWearableNode
+     *
+     * This function helps determine the wearable node that we will be
+     * sending messages too.
+     *
+     * */
+    private void determineWearableNode() {
 
         try {
+            
+            Task<List<Node>> nodeListTask =  Wearable.getNodeClient(context).getConnectedNodes();
+
             List<Node> nodeList = Tasks.await(nodeListTask);
 
-            for(Node node: nodeList){
-                Task<Integer> sendMessageTask =
-                        Wearable.getMessageClient(context).sendMessage(node.getId(), messagePath, jsonObject.toString().getBytes());
-
-                Integer result = Tasks.await(sendMessageTask);
-                callbackContext.success(result);
-
+            for(Node node: nodeList) {
+                if(node.isNearby()) {
+                    wNode = node;
+                    break;
+                }
+                wNode = node;
             }
 
         } catch (ExecutionException e) {
@@ -127,41 +109,80 @@ public class WearOS extends CordovaPlugin {
         }
     }
 
+    /**
+     * Function: subscribe
+     *
+     * This function adds a Wearable Listener to the Wearable Message Client and reports all received
+     * messages and errors to the supplied callback functions.
+     *
+     * @param {successCallback} success - Success callback, called repeatedly
+     * for each message recieved.
+     * @param {failCallback} error - Error callback.
+     *
+     * */
+    private void subscribe(CallbackContext callbackContext) {
+
+        Wearable.getMessageClient(context).addListener(new WearableListener(callbackContext));
+
+    }
+
+
+    /**
+     * Function: sendMessage
+     * 
+     * This function sends a JSONObject message to the connected wearable. All successes and errors are
+     * reported to the supplied callback functions.
+     * 
+     * @param {JSONObject} jsonObject - JSON Object message
+     * @param {String} messagePath - Path to wear the message will be stored by the wearable.
+     * @param {successCallback} success - Success callback, called when a message is sent successfully.
+     * @param {failCallback} error - Error callback.
+     *
+     * */
+    private void sendMessage(JSONObject jsonObject, String messagePath, CallbackContext callbackContext) {
+        
+        try {
+
+        if (wNode == null)
+            determineWearableNode();
+
+        Task<Integer> sendMessageTask =
+                Wearable.getMessageClient(context).sendMessage(wNode.getId(), messagePath, jsonObject.toString().getBytes());
+
+        Integer result = Tasks.await(sendMessageTask);
+        callbackContext.success(result);
+
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Class: WearableListener
+     *
+     *  A listener that implements the onMessageReceivedListener provided by google play services.
+     *  Every time a message event is received the listener translate the message event into a JSONObject
+     *  and sends it to the javascript provided success function via callbackContext.
+     *
+     * @param {CallbackContext} callbackContext - The success callback context that is sends a message in JSONObject to
+     * provided javascript success function.
+     *
+     * */
     private class WearableListener implements DataClient.OnDataChangedListener,
             MessageClient.OnMessageReceivedListener,
-            CapabilityClient.OnCapabilityChangedListener{
+            CapabilityClient.OnCapabilityChangedListener {
 
         private CallbackContext callbackContext;
-        private String dataLayerPath, dataLayerType;
 
-        public WearableListener(String dataLayerPath, String dataLayerType, CallbackContext callbackContext){
+
+        public WearableListener(CallbackContext callbackContext) {
             this.callbackContext = callbackContext;
-            this.dataLayerPath = dataLayerPath;
-            this.dataLayerType = dataLayerType;
+
         }
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            for (DataEvent event : dataEventBuffer) {
-                if (event.getType() == DataEvent.TYPE_CHANGED) {
-                    // DataItem changed
-                    DataItem item = event.getDataItem();
-                    if (item.getUri().getPath().compareTo(dataLayerPath) == 0) {
-                        DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-
-                        try {
-                            JSONObject object = new JSONObject(new String(dataMap.getByteArray(dataLayerType)));
-                            PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, object.toString());
-                            pluginResult.setKeepCallback(true);
-                            callbackContext.sendPluginResult(pluginResult);
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-                }
-            }
         }
 
         @Override
@@ -171,7 +192,20 @@ public class WearOS extends CordovaPlugin {
 
         @Override
         public void onMessageReceived(@NonNull MessageEvent messageEvent) {
+            
+            try {
+                
+                JSONObject jsonMessage = new JSONObject(new String(messageEvent.getData()));
+                
+                Log.d("Message Received: ", jsonMessage.toString());
+                
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, jsonMessage.toString());
+                pluginResult.setKeepCallback(true);
+                callbackContext.sendPluginResult(pluginResult);
 
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     }
 
